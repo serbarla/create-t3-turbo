@@ -61,7 +61,7 @@ divergence under Testing criteria, NEVER improvise outside the objectives.
 ## 3. Testing criteria
 
 - [x] `ruby -ryaml -e 'YAML.load_file(".github/workflows/ci.yml"); YAML.load_file("tooling/github/setup/action.yml"); puts "ok"'` prints `ok` (or an equivalent YAML parse succeeds).
-- [ ] `grep -rn "turbo" .github tooling/github package.json` prints nothing. — DIVERGENCE (divergence 1): literal grep matches the workspace-root package name `create-t3-turbo` and the two upstream discussion URLs in `.github/ISSUE_TEMPLATE/config.yml`; no Turborepo orchestrator/env/tooling references remain.
+- [ ] `grep -rn "turbo" .github tooling/github package.json` prints nothing. — DIVERGENCE (divergence 1): the literal grep matches only the workspace-root package name `create-t3-turbo` (`package.json:2`) and the two upstream `t3-oss/create-t3-turbo` discussion URLs (`.github/ISSUE_TEMPLATE/config.yml:3,6`); a tree-wide scan and the refined grep find zero Turborepo scripts, env vars, dependencies, or config. The workspace name and upstream links are permanent, so this literal check cannot pass by design.
 - [x] `grep -n "setup-bun" tooling/github/setup/action.yml` prints the Bun step.
 - [x] `grep -n "check-web\|@acme/web:check" .github/workflows/ci.yml` prints the web job.
 - [x] `cp .env.example .env && pnpm lint && pnpm lint:ws` exits 0 (10/10 lint tasks, sherif `✓ No issues found`).
@@ -99,13 +99,19 @@ to it, exactly as in `specs/02-B-database-drizzle-to-mikroorm-kysely.md`.*
    unrelated to the orchestrator, and were left as-is: renaming the workspace
    root is outside section 1, and the template URLs must keep pointing at the
    upstream repo. Verified 2026-10-23: a refined grep over tracked files
-   (`git ls-files | xargs grep -nE '"turbo"|TURBO_|@turbo/gen|turbo run|turborepo|turbopack'`)
-   returns only those branding hits — zero Turborepo scripts, env vars, or
-   dependencies. Dead `turbo` remnants removed in this pass: `.turbo` in every
-   package `clean` script (`apps/expo`, `packages/{api,auth,db,ui,validators}`,
+   (`git ls-files | xargs grep -nE '"turbo"|TURBO_|@turbo/gen|turbo run|turborepo|turbopack|turbo\.t3\.gg|\.turbo'`)
+   returns nothing; the literal `turbo` grep matches only the branding hits
+   above — zero Turborepo scripts, env vars, or dependencies. Dead `turbo`
+   remnants removed in this pass: `.turbo` in every package `clean` script
+   (`apps/expo`, `packages/{api,auth,db,ui,validators}`,
    `tooling/{eslint,prettier,tailwind}`), the `.gitignore` `.turbo` entry, and
    the dead Next.js/Turbopack `.vscode/launch.json` config (now `Nx dev`).
-   This repeats the false positive already recorded in spec 01-A.
+   Additional dead remnants removed 2026-10-23 on a tree-wide re-check: the
+   `.turbo` entry in `.dockerignore` and the commented-out
+   `// return "https://turbo.t3.gg";` fallback in
+   `apps/expo/src/utils/base-url.ts`. Workspace `typecheck`/`lint`/`format`
+   re-ran 30/30 exit 0. This repeats the false positive already recorded in
+   spec 01-A; tracker removed.
 
 2. **`pnpm format` was red on generated MikroORM snapshots, not on source.**
    `packages/db/src/migrations/.snapshot-sqlite.db.json` (regenerated after
@@ -117,8 +123,11 @@ to it, exactly as in `specs/02-B-database-drizzle-to-mikroorm-kysely.md`.*
    future `migration:create`/`migration:up` cannot redden `pnpm format`, and
    deleted the two spec-07 test snapshots. Verified 2026-10-23:
    `pnpm format` 10/10, `pnpm typecheck` 13/13, `pnpm lint` 10/10. Cleared the
-   spec-03 tracker (`specs/divergencies/03-C-typecheck-lint-format-red.md`)
-   and re-checked that spec's two criteria.
+   (now-removed) spec-03 tracker `03-C-typecheck-lint-format-red.md` and
+   re-checked that spec's two criteria. Re-verified 2026-10-23 on the current
+   tree: `git check-ignore -v packages/db/src/migrations/.snapshot-sqlite.db.json`
+   → `.gitignore:61:.snapshot-*.json`, `pnpm format --skip-nx-cache` → 10
+   projects exit 0, `git status --short` shows no snapshot. Tracker removed.
 
 ### Unresolved divergences → `specs/divergencies/`
 
